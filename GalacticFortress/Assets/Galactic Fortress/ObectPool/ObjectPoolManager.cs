@@ -6,13 +6,13 @@ using UnityEngine.Pool;
 
 public class ObjectPoolManager : MonoBehaviour
 {
-    [SerializeField] private GameObject bulletPrefab;
+    [SerializeField] private GameObject _bulletPrefab;
 
-    [SerializeField] private Material playerBulletMaterial;
-    [SerializeField] private Material enemyBulletMaterial;
+    [SerializeField] private GameObject[] _randomScrollingObjects; 
 
     public ObjectPool<Bullet> playerBulletPool;
     public ObjectPool<Bullet> enemyBulletPool;
+    public ObjectPool<PoolingObject> scrollingObjectsPool;
 
     private static ObjectPoolManager singleton;
     public static ObjectPoolManager Singleton
@@ -35,10 +35,11 @@ public class ObjectPoolManager : MonoBehaviour
     }
     private void Awake()
     {
-        Singleton = this;
+        singleton = this;
 
         playerBulletPool = new ObjectPool<Bullet>(InstantiatePlayerBulletPoolObject, TakeObjectFromPool, ReturnObjectToPool);
         enemyBulletPool = new ObjectPool<Bullet>(InstantiateEnemyBulletPoolObject, TakeObjectFromPool, ReturnObjectToPool);
+        scrollingObjectsPool = new ObjectPool<PoolingObject>(InstantiateRandomScrollingPoolObject, TakeObjectFromPool, ReturnObjectToPool);
     }
     
     void Start()
@@ -48,10 +49,7 @@ public class ObjectPoolManager : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetMouseButtonDown(0))
-        {
-            playerBulletPool.Get();
-        }
+       
         if (Input.GetKeyDown(KeyCode.Space))
         {
             print("foo");
@@ -61,29 +59,35 @@ public class ObjectPoolManager : MonoBehaviour
     private Bullet InstantiatePlayerBulletPoolObject()
     {
         Bullet playerBullet = new Bullet();
-        playerBullet.@object = Instantiate(bulletPrefab, transform);
-        playerBullet.SetName("Player" + bulletPrefab.name);
+        playerBullet.@object = Instantiate(_bulletPrefab, transform);
+        playerBullet.SetName("Player" + _bulletPrefab.name);
         return playerBullet;
     }
     private Bullet InstantiateEnemyBulletPoolObject()
     {
-
         return null;
     }
+
+    private PoolingObject InstantiateRandomScrollingPoolObject()
+    {
+        PoolingObject scrollingObject = new PoolingObject();
+        scrollingObject.@object = Instantiate(_randomScrollingObjects[Random.Range(0, _randomScrollingObjects.Length)], transform);
+        return scrollingObject;
+    }
+
     private void TakeObjectFromPool(PoolingObject poolingObject) => poolingObject.@object.SetActive(true);
     private void ReturnObjectToPool(PoolingObject poolingObject) => poolingObject.@object.SetActive(false);
 
     
-    
-   
-
 }
 
 public class Bullet : PoolingObject
 {
-    public void Shoot(Vector3 pos)
+    public void Shoot(Vector3 pos, Vector3 dir)
     {
-        @object.transform.position = pos;  
+        @object.transform.position = pos;
+        @object.GetComponent<Projectile>().dir = dir;
+        @object.transform.rotation = Quaternion.LookRotation(dir);
     }
 
     public void SetMaterial(Material material)
@@ -92,10 +96,11 @@ public class Bullet : PoolingObject
     }
 }
 
-public abstract class PoolingObject
+
+public class PoolingObject
 {
     public GameObject @object;
-    public IObjectPool<PoolingObject> pool;
+    internal IObjectPool<PoolingObject> pool;
 
     public void SetPool(IObjectPool<PoolingObject> pool)
     {

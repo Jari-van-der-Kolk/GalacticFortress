@@ -19,18 +19,17 @@ public class PlayerManager : MonoBehaviour
     
     void Update()
     {
-
-        
+        ShootBullet();
     }
 
     private void ShootBullet()
     {
         _timer += _shootingSpeed * Time.deltaTime;
 
-        if (_timer >= 1f)
+        if (Input.GetMouseButton(0) && _timer >= 1f)
         {
             Bullet bullet = ObjectPoolManager.Singleton.playerBulletPool.Get();
-            bullet.Shoot(_shootPos.transform.position);
+            bullet.Shoot(_shootPos.transform.position, transform.right);
         }
 
     }
